@@ -3,6 +3,10 @@ export default [
     name: "Al Jazeera – Palestine",
     url: "https://www.aljazeera.net/aljazeerarss/palestine.xml"
   },
+   {
+    name: "Anadolu Agency – Middle East",
+    url: "https://www.aa.com.tr/en/rss/default?cat=middle-east"
+  },
   {
     name: "Al Jazeera – Global",
     url: "https://www.aljazeera.com/xml/rss/all.xml"
@@ -67,6 +71,10 @@ export default [
   name: "Al Jazeera Sport",
   url: "https://www.aljazeera.net/aljazeerarss/sport.xml"
 },
+    {
+    name: "Euronews Arabic",
+    url: "https://arabic.euronews.com/rss"
+  },
 {
   name: "NYTimes Business",
   url: "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml"
