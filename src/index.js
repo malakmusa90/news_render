@@ -94,22 +94,11 @@ fetchAll();
 cron.schedule("*/5 * * * *", fetchAll);
 console.log("RSS Fetcher scheduled every 5 minutes...");
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
-http.createServer(async (req, res) => {
-  if (req.url === "/data") {
-    try {
-      const data = await fs.readFile("./data/all_news.json", "utf8");
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(data);
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "text/plain" });
-      res.end("Error reading all_news.json");
-    }
-  } else {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("✅ RSS Worker is running...\n");
-  }
+http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("RSS Worker is running...\n");
 }).listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`Dummy server running on port ${PORT}`);
 });
