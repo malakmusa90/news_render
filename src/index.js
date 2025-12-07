@@ -40,8 +40,8 @@ async function saveJSON(file, data) {
 
 async function fetchAll() {
 
-    if (isFetching) {
-    console.log("⏳ Previous fetch still running, skipping this cycle...");
+  if (isFetching) {
+    console.log("Previous fetch still running, skipping this cycle...");
     return;
   }
 
@@ -61,11 +61,11 @@ async function fetchAll() {
 
     await Promise.allSettled(
       sources.map(async (source) => {
-        console.log(`\n🌐 Fetching from: ${source.name}`);
+        console.log(`\nFetching from: ${source.name}`);
 
         const items = await scrapeRSS(source);
 
-        console.log(`📥 Extracted: ${items.length} items from ${source.name}`);
+        console.log(`Extracted: ${items.length} items from ${source.name}`);
 
         const lastSourceDate =
           lastDates[source.name] || "1970-01-01T00:00:00Z";
@@ -96,7 +96,6 @@ async function fetchAll() {
       })
     );
 
-
     await saveJSON(ALL_NEWS_FILE, allNews);
     await saveJSON(LAST_DATES_FILE, lastDates);
 
@@ -114,7 +113,6 @@ async function fetchAll() {
 }
 
 fetchAll();
-
 
 cron.schedule("*/3 * * * *", fetchAll);
 console.log("RSS Fetcher scheduled every 3 minutes");
