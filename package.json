@@ -1,0 +1,14 @@
+{
+  "name": "rss-news-stream",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "rss-parser": "^3.13.0",
+    "node-fetch": "^3.3.2",
+    "cheerio": "^1.0.0-rc.12",
+    "node-cron": "^3.0.3"
+  }
+}
