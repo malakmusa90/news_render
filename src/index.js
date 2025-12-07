@@ -3,6 +3,7 @@ import path from "path";
 import cron from "node-cron";
 import sources from "./config/rssSources.js";
 import { scrapeRSS } from "./scrapers/rssScraper.js";
+import http from "http";
 
 const ALL_NEWS_FILE = path.resolve("./data/all_news.json");
 const LAST_DATES_FILE = path.resolve("./data/last_dates.json");
@@ -39,17 +40,17 @@ async function fetchAll() {
   let lastDates = await loadJSON(LAST_DATES_FILE);
 
   console.log("\n====================================================");
-  console.log(`🟦 Fetch cycle started: ${new Date().toISOString()}`);
+  console.log(`Fetch cycle started: ${new Date().toISOString()}`);
   console.log("====================================================");
 
   let totalNew = 0;
 
   for (const source of sources) {
-    console.log(`\n🌐 Fetching from: ${source.name}`);
+    console.log(`\n Fetching from: ${source.name}`);
 
     const items = await scrapeRSS(source);
 
-    console.log(`📥 Extracted: ${items.length} items from ${source.name}`);
+    console.log(`Extracted: ${items.length} items from ${source.name}`);
 
     const lastSourceDate = lastDates[source.name] || "1970-01-01T00:00:00Z";
     let added = 0;
@@ -81,14 +82,23 @@ async function fetchAll() {
   await saveJSON(LAST_DATES_FILE, lastDates);
 
   console.log("\n====================================================");
-  console.log(`💾 Saved all news!`);
-  console.log(`📊 Total items stored in all_news.json: ${allNews.length}`);
-  console.log(`🟩 New items added this cycle: ${totalNew}`);
+  console.log(`Saved all news!`);
+  console.log(`Total items stored in all_news.json: ${allNews.length}`);
+  console.log(`New items added this cycle: ${totalNew}`);
   console.log("====================================================\n");
 }
 
-// التشغيل الفوري
+
 fetchAll();
 
 cron.schedule("*/3 * * * *", fetchAll);
-console.log("🕒 RSS Fetcher scheduled every 3 minutes...");
+console.log("RSS Fetcher scheduled every 3 minutes...");
+
+const PORT = process.env.PORT || 3000;
+
+http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("RSS Worker is running...\n");
+}).listen(PORT, () => {
+  console.log(`Dummy server running on port ${PORT}`);
+});

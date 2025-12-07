@@ -64,14 +64,14 @@ async function fetchFullContent(articleUrl) {
 }
 
 export async function scrapeRSS(source) {
-  console.log(`🔵 [${source.name}] Fetching RSS…`);
+  console.log(`[${source.name}] Fetching RSS…`);
 
   let feed;
 
   try {
     feed = await parser.parseURL(source.url);
   } catch (err) {
-    console.error(`❌ Failed to fetch RSS for ${source.name}:`, err.message);
+    console.error(`Failed to fetch RSS for ${source.name}:`, err.message);
     return [];
   }
 
