@@ -8,6 +8,8 @@ import http from "http";
 const ALL_NEWS_FILE = path.resolve("./data/all_news.json");
 const LAST_DATES_FILE = path.resolve("./data/last_dates.json");
 
+let isFetching = false;
+
 async function ensureFiles() {
   await fs.mkdir("./data", { recursive: true });
 
@@ -32,72 +34,90 @@ async function loadJSON(file, fallback) {
   }
 }
 
-
 async function saveJSON(file, data) {
   await fs.writeFile(file, JSON.stringify(data, null, 2), "utf8");
 }
 
 async function fetchAll() {
-  await ensureFiles();
 
-  let allNews = await loadJSON(ALL_NEWS_FILE, []);
-  let lastDates = await loadJSON(LAST_DATES_FILE, {});
+    if (isFetching) {
+    console.log("⏳ Previous fetch still running, skipping this cycle...");
+    return;
+  }
 
-  console.log("\n====================================================");
-  console.log(`🟦 Fetch cycle started: ${new Date().toISOString()}`);
-  console.log("====================================================");
+  isFetching = true;
 
-  let totalNew = 0;
+  try {
+    await ensureFiles();
 
-  await Promise.allSettled(
-    sources.map(async (source) => {
-      console.log(`\n🌐 Fetching from: ${source.name}`);
+    let allNews = await loadJSON(ALL_NEWS_FILE, []);
+    let lastDates = await loadJSON(LAST_DATES_FILE, {});
 
-      const items = await scrapeRSS(source);
+    console.log("\n====================================================");
+    console.log(`Fetch cycle started: ${new Date().toISOString()}`);
+    console.log("====================================================");
 
-      console.log(`📥 Extracted: ${items.length} items from ${source.name}`);
+    let totalNew = 0;
 
-      const lastSourceDate = lastDates[source.name] || "1970-01-01T00:00:00Z";
-      let added = 0;
+    await Promise.allSettled(
+      sources.map(async (source) => {
+        console.log(`\n🌐 Fetching from: ${source.name}`);
 
-      for (const item of items) {
-        if (!item.date) continue;
+        const items = await scrapeRSS(source);
 
-        const itemDate = new Date(item.date).getTime();
-        const lastDate = new Date(lastSourceDate).getTime();
+        console.log(`📥 Extracted: ${items.length} items from ${source.name}`);
 
-        if (itemDate > lastDate) {
-          allNews.push(item);
-          added++;
-          totalNew++;
+        const lastSourceDate =
+          lastDates[source.name] || "1970-01-01T00:00:00Z";
 
-          if (
-            !lastDates[source.name] ||
-            item.date > lastDates[source.name]
-          ) {
-            lastDates[source.name] = item.date;
+        let added = 0;
+
+        for (const item of items) {
+          if (!item.date) continue;
+
+          const itemDate = new Date(item.date).getTime();
+          const lastDate = new Date(lastSourceDate).getTime();
+
+          if (itemDate > lastDate) {
+            allNews.push(item);
+            added++;
+            totalNew++;
+
+            if (
+              !lastDates[source.name] ||
+              item.date > lastDates[source.name]
+            ) {
+              lastDates[source.name] = item.date;
+            }
           }
         }
-      }
 
-      console.log(`   ✔ New items added from ${source.name}: ${added}`);
-    })
-  );
+        console.log(`New items added from ${source.name}: ${added}`);
+      })
+    );
 
-  await saveJSON(ALL_NEWS_FILE, allNews);
-  await saveJSON(LAST_DATES_FILE, lastDates);
 
-  console.log("\n====================================================");
-  console.log(`💾 Saved all news!`);
-  console.log(`📊 Total items stored in all_news.json: ${allNews.length}`);
-  console.log(`🟩 New items added this cycle: ${totalNew}`);
-  console.log("====================================================\n");
+    await saveJSON(ALL_NEWS_FILE, allNews);
+    await saveJSON(LAST_DATES_FILE, lastDates);
+
+    console.log("\n====================================================");
+    console.log(`Saved all news!`);
+    console.log(`Total items stored in all_news.json: ${allNews.length}`);
+    console.log(`New items added this cycle: ${totalNew}`);
+    console.log("====================================================\n");
+
+  } catch (err) {
+    console.error("Fetch cycle failed:", err);
+  } finally {
+    isFetching = false;
+  }
 }
 
 fetchAll();
 
+
 cron.schedule("*/3 * * * *", fetchAll);
-console.log("🕒 RSS Fetcher scheduled every 3 minutes...");
+console.log("RSS Fetcher scheduled every 3 minutes");
 
 
 const PORT = process.env.PORT || 3000;
@@ -110,8 +130,8 @@ http.createServer((req, res) => {
     });
   } else {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("✅ RSS Worker is running...\n");
+    res.end("RSS Worker is running...\n");
   }
 }).listen(PORT, () => {
-  console.log(`✅ Dummy server running on port ${PORT}`);
+  console.log(`Dummy server running on port ${PORT}`);
 });
