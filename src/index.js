@@ -74,7 +74,7 @@ async function fetchAll() {
       }
     }
 
-    console.log(`   ✔ New items added from ${source.name}: ${added}`);
+    console.log(`New items added from ${source.name}: ${added}`);
   }
 
 
@@ -91,8 +91,8 @@ async function fetchAll() {
 
 fetchAll();
 
-cron.schedule("*/3 * * * *", fetchAll);
-console.log("RSS Fetcher scheduled every 3 minutes...");
+cron.schedule("*/5 * * * *", fetchAll);
+console.log("RSS Fetcher scheduled every 5 minutes...");
 
 const PORT = process.env.PORT || 3000;
 
