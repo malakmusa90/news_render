@@ -3,26 +3,26 @@ import path from "path";
 import cron from "node-cron";
 import sources from "./config/rssSources.js";
 import { scrapeRSS } from "./scrapers/rssScraper.js";
-import http from "http";
 
 const ALL_NEWS_FILE = path.resolve("./data/all_news.json");
 const LAST_DATES_FILE = path.resolve("./data/last_dates.json");
 
 let isFetching = false;
 
+// إنشاء الملفات محليًا فقط إن لم تكن موجودة
 async function ensureFiles() {
   await fs.mkdir("./data", { recursive: true });
 
-  try { 
-    await fs.access(ALL_NEWS_FILE); 
-  } catch { 
-    await fs.writeFile(ALL_NEWS_FILE, "[]"); 
+  try {
+    await fs.access(ALL_NEWS_FILE);
+  } catch {
+    await fs.writeFile(ALL_NEWS_FILE, "[]");
   }
 
-  try { 
-    await fs.access(LAST_DATES_FILE); 
-  } catch { 
-    await fs.writeFile(LAST_DATES_FILE, "{}"); 
+  try {
+    await fs.access(LAST_DATES_FILE);
+  } catch {
+    await fs.writeFile(LAST_DATES_FILE, "{}");
   }
 }
 
@@ -41,7 +41,7 @@ async function saveJSON(file, data) {
 async function fetchAll() {
 
   if (isFetching) {
-    console.log("Previous fetch still running, skipping this cycle...");
+    console.log("⏳ Previous fetch still running, skipping this cycle...");
     return;
   }
 
@@ -53,83 +53,71 @@ async function fetchAll() {
     let allNews = await loadJSON(ALL_NEWS_FILE, []);
     let lastDates = await loadJSON(LAST_DATES_FILE, {});
 
+    const beforeCount = allNews.length; // ✅ عدد الأخبار قبل الإضافة
+
     console.log("\n====================================================");
-    console.log(`Fetch cycle started: ${new Date().toISOString()}`);
+    console.log(`🕒 Fetch cycle started: ${new Date().toISOString()}`);
+    console.log(`📂 Items BEFORE this cycle: ${beforeCount}`);
     console.log("====================================================");
 
     let totalNew = 0;
 
-    await Promise.allSettled(
-      sources.map(async (source) => {
-        console.log(`\nFetching from: ${source.name}`);
+    for (const source of sources) {
+      console.log(`\n🌐 Fetching from: ${source.name}`);
 
-        const items = await scrapeRSS(source);
+      const items = await scrapeRSS(source);
 
-        console.log(`Extracted: ${items.length} items from ${source.name}`);
+      console.log(`📥 Extracted: ${items.length} items from ${source.name}`);
 
-        const lastSourceDate =
-          lastDates[source.name] || "1970-01-01T00:00:00Z";
+      const lastSourceDate =
+        lastDates[source.name] || "1970-01-01T00:00:00Z";
 
-        let added = 0;
+      let added = 0;
 
-        for (const item of items) {
-          if (!item.date) continue;
+      for (const item of items) {
+        if (!item.date) continue;
 
-          const itemDate = new Date(item.date).getTime();
-          const lastDate = new Date(lastSourceDate).getTime();
+        const itemDate = new Date(item.date).getTime();
+        const lastDate = new Date(lastSourceDate).getTime();
 
-          if (itemDate > lastDate) {
-            allNews.push(item);
-            added++;
-            totalNew++;
+        if (itemDate > lastDate) {
+          allNews.push(item);
+          added++;
+          totalNew++;
 
-            if (
-              !lastDates[source.name] ||
-              item.date > lastDates[source.name]
-            ) {
-              lastDates[source.name] = item.date;
-            }
+          if (!lastDates[source.name] || item.date > lastDates[source.name]) {
+            lastDates[source.name] = item.date;
           }
         }
+      }
 
-        console.log(`New items added from ${source.name}: ${added}`);
-      })
-    );
+      console.log(`✅ New items added from ${source.name}: ${added}`);
+      console.log(`📊 Total news count so far: ${allNews.length}`);
+    }
 
     await saveJSON(ALL_NEWS_FILE, allNews);
     await saveJSON(LAST_DATES_FILE, lastDates);
 
+    const afterCount = allNews.length; // ✅ بعد الإضافة
+
     console.log("\n====================================================");
-    console.log(`Saved all news!`);
-    console.log(`Total items stored in all_news.json: ${allNews.length}`);
-    console.log(`New items added this cycle: ${totalNew}`);
+    console.log(`📂 Items BEFORE this cycle: ${beforeCount}`);
+    console.log(`🆕 New items added this cycle: ${totalNew}`);
+    console.log(`📦 Items AFTER this cycle: ${afterCount}`);
+    console.log(`✅ Check: before + new = ${beforeCount + totalNew}`);
     console.log("====================================================\n");
 
   } catch (err) {
-    console.error("Fetch cycle failed:", err);
+    console.error("❌ Fetch cycle failed:", err);
   } finally {
     isFetching = false;
   }
 }
 
+
+// تشغيل عند بدء البرنامج
 fetchAll();
 
+// تشغيل تلقائي كل 3 دقائق محليًا فقط
 cron.schedule("*/3 * * * *", fetchAll);
-console.log("RSS Fetcher scheduled every 3 minutes");
-
-
-const PORT = process.env.PORT || 3000;
-
-http.createServer((req, res) => {
-  if (req.url === "/data") {
-    fs.readFile(ALL_NEWS_FILE, "utf8").then(data => {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(data);
-    });
-  } else {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("RSS Worker is running...\n");
-  }
-}).listen(PORT, () => {
-  console.log(`Dummy server running on port ${PORT}`);
-});
+console.log("✅ RSS Fetcher running locally every 3 minutes");

@@ -82,9 +82,5 @@ export default [
 {
   name: "Reuters Business",
   url: "https://feeds.reuters.com/reuters/businessNews"
-},
-{
-  name: "France24 Business",
-  url: "https://www.france24.com/en/rss/business"
 }
 ];
